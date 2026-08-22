@@ -1,6 +1,6 @@
 ---
-name: afk-impl
-description: 用于 AFK 实施已规划完成的长任务
+name: afk-orchestrator
+description: AFK 长任务编排，负责拆分、派发、审查与验收已规划工作
 disable-model-invocation: true
 ---
 
@@ -23,8 +23,8 @@ disable-model-invocation: true
 1. 按依赖、生产边界与写入范围拆成纵向切片。每个阶段交付一个可观察成果
 2. 在阶段开始时记录固定点、目标、风险档位、可写范围与门禁安排
 3. 派发前判断是否要求 subagent 创建切片 goal。切片预计跨多个会话轮次、包含多项完成证据且能在当前权限内持续推进时，在初始消息开头提出要求；其他切片不创建
-4. 为每个切片启动干净会话，要求 subagent 调用 `afk-worker`。派发消息按 [消息构造参考](references/delegation-messages.md) 写清任务边界，事实材料通过上下文指针提供
-5. 阶段实现完成后，以阶段固定点调用 `code-review` 做一次独立双轴审查。返工仍交给 `afk-worker`
+4. 为每个切片启动干净会话，要求 subagent 调用 `afk-slice-worker`。派发消息按 [消息构造参考](references/delegation-messages.md) 写清任务边界，事实材料通过上下文指针提供
+5. 阶段实现完成后，以阶段固定点调用 `code-review` 做一次独立双轴审查。返工仍交给 `afk-slice-worker`
 6. 阶段审查收敛后运行一次根门禁并按需提交。依赖该阶段的后续工作从已验收状态继续
 7. 所有阶段完成后，以总任务固定点调用 `code-review` 做最终审计，再运行一次最终根门禁
 

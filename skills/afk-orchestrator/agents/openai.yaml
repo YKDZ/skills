@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK 编排器"
+  short_description: "编排、审查并验收已规划的 AFK 长任务"
+
+policy:
+  allow_implicit_invocation: false

@@ -1,9 +1,11 @@
 ---
-name: afk-worker
-description: AFK 实现有界纵向切片，并提供针对性测试与生产边界证据
+name: afk-slice-worker
+description: AFK 切片执行，实现当前消息定义的一个有界切片
 ---
 
 完成当前任务切片。只使用当前会话明确提供的信息和可读取的工作区材料；没有出现的信息视为未知。
+
+若当前任务要求规划或实施整组 ticket 与 Spec、派发其他 agent、执行阶段审查或负责整体交付，报告 `INCOMPLETE` 并说明任务不属于本技能。不要把本技能解释为长任务编排器。
 
 ## 开始前
 
