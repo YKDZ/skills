@@ -1,5 +1,5 @@
 interface:
-  display_name: "AFK 切片执行器"
+  display_name: "AFK Slice Worker"
   short_description: "只实现当前消息定义的有界切片并返回验证证据"
 
 policy:

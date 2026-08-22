@@ -1,5 +1,5 @@
 interface:
-  display_name: "AFK 编排器"
+  display_name: "AFK Orchestrator"
   short_description: "编排、审查并验收已规划的 AFK 长任务"
 
 policy:
