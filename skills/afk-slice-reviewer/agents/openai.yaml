@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Slice Reviewer"
+  short_description: "只读核验 AFK 候选的合同、失败模式与阻塞项"
+
+policy:
+  allow_implicit_invocation: false
