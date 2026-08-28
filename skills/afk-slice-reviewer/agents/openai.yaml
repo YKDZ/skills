@@ -1,5 +1,5 @@
 interface:
-  display_name: "AFK Slice Reviewer"
+  display_name: "AFK 切片审查者"
   short_description: "只读核验 AFK 候选的合同、失败模式与阻塞项"
 
 policy:
