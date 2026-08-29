@@ -1,5 +1,5 @@
 interface:
-  display_name: "AFK 切片执行者"
+  display_name: "AFK Slice Worker"
   short_description: "在给定边界与预算内完成一个 AFK 切片并返回证据"
 
 policy:
