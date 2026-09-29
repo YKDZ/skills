@@ -1,6 +1,7 @@
 /.agents
 /skills-lock.json
 /docs
-AGENTS.md
-CONTEXT.md
+/AGENTS.md
+/CONTEXT.md
 node_modules
+/.scratch
