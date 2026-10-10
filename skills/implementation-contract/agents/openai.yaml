@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implementation Contract"
+  short_description: "配合规格实施流程，约束持续推进、需求边界、验收证据与修复收敛"
+policy:
+  allow_implicit_invocation: false

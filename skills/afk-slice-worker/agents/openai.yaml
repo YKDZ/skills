@@ -1,6 +1,0 @@
-interface:
-  display_name: "AFK Slice Worker"
-  short_description: "在给定边界内完成一个 AFK 切片行动并返回证据"
-
-policy:
-  allow_implicit_invocation: false
