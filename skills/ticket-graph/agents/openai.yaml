@@ -1,4 +1,4 @@
 interface:
-  display_name: "票图管理"
+  display_name: "Ticket Graph"
 policy:
   allow_implicit_invocation: false
