@@ -1,0 +1,4 @@
+interface:
+  display_name: "票图管理"
+policy:
+  allow_implicit_invocation: false

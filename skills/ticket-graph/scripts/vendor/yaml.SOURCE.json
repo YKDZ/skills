@@ -1,0 +1,16 @@
+{
+  "package": "yaml",
+  "version": "2.9.1",
+  "license": "ISC",
+  "repository": "https://github.com/eemeli/yaml",
+  "documentation": "https://eemeli.org/yaml/",
+  "tarball": "https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz",
+  "generatedBy": "esbuild@0.28.2",
+  "buildScript": "scripts/build-ticket-graph-vendor.mjs",
+  "rebuildFromRepositoryRoot": [
+    "pnpm install --frozen-lockfile --ignore-scripts",
+    "pnpm run build:ticket-graph-vendor"
+  ],
+  "dependencyVersionsAndIntegrity": "依赖版本与完整性校验信息由仓库根目录的 package.json 和 pnpm-lock.yaml 管理。",
+  "distribution": "复制技能目录即可使用。使用者只需 Node.js，无需安装依赖或构建。"
+}
