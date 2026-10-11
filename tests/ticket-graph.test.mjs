@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync, spawn } from 'node:child_process';
 
 const cli = fileURLToPath(new URL('../skills/ticket-graph/scripts/ticket-graph.mjs', import.meta.url));
-function fixture(t, tickets, completion = { field: 'status', values: ['resolved'] }) {
+function fixture(t, tickets, completion = { values: ['resolved'] }) {
   const root = mkdtempSync(join(tmpdir(), 'ticket-graph-test-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'issues'));
@@ -48,7 +48,7 @@ test('按配置计算未完成票的直接前置，查询不写文件', t => {
 });
 
 test('帮助不要求配置；无效用法和配置返回可定位的结构化错误', t => {
-  for (const command of ['', 'check', 'list', 'set-status', 'set-deps', 'history']) {
+  for (const command of ['', 'init', 'check', 'list', 'set-status', 'set-deps', 'history']) {
     const result = spawnSync(process.execPath, [cli, ...command ? [command] : [], '--help'], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     assert.ok(result.stdout.includes('--config'));
@@ -58,7 +58,7 @@ test('帮助不要求配置；无效用法和配置返回可定位的结构化�
   const missing = run(f, 'set-deps', '01');
   assert.equal(missing.status, 2);
   assert.equal(missing.error.error.code, 'USAGE');
-  writeFileSync(f.config, JSON.stringify({ tickets: 'issues', completion: { field: 'status', values: [] } }));
+  writeFileSync(f.config, JSON.stringify({ tickets: 'issues', completion: { values: [] } }));
   const invalid = run(f, 'list');
   assert.equal(invalid.status, 1);
   assert.equal(invalid.error.error.code, 'INVALID_CONFIG');
@@ -66,19 +66,19 @@ test('帮助不要求配置；无效用法和配置返回可定位的结构化�
 });
 
 test('修改完成字段保留其余原文，重复设置不重写或追加历史', t => {
-  const before = '---\r\n# 注释\r\nphase: open # 仍需实施\r\nblocked_by: []\r\nextra: "原样保留"\r\n---\r\n正文：phase: open\r\n';
-  const f = fixture(t, { '01': before }, { field: 'phase', values: ['shipped', 'resolved'] });
+  const before = '---\r\n# 注释\r\nstatus: open # 仍需实施\r\nblocked_by: []\r\nextra: "原样保留"\r\n---\r\n正文：status: open\r\n';
+  const f = fixture(t, { '01': before }, { values: ['shipped', 'resolved'] });
   const result = run(f, 'set-status', '01', 'shipped');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.data.changed, true);
-  assert.equal(result.data.field, 'phase');
+  assert.equal(result.data.field, 'status');
   assert.equal(result.data.before, 'open');
   assert.equal(result.data.after, 'shipped');
-  assert.equal(readFileSync(f.path('01'), 'utf8'), before.replace('phase: open #', 'phase: "shipped" #'));
+  assert.equal(readFileSync(f.path('01'), 'utf8'), before.replace('status: open #', 'status: "shipped" #'));
   const history = readFileSync(f.history, 'utf8');
   const event = JSON.parse(history);
   assert.equal(event.ticket, '01');
-  assert.equal(event.field, 'phase');
+  assert.equal(event.field, 'status');
   assert.equal(event.before, 'open');
   assert.equal(event.after, 'shipped');
   assert.ok(Number.isFinite(Date.parse(event.time)));
@@ -167,7 +167,7 @@ test('新增依赖不能把读取失败当作无依赖，独立修改仍可逐�
 });
 
 test('空结果保留查询范围，完成值可配置，改文件名后缀不改变标识', t => {
-  const f = fixture(t, { '001': ticket('shipped'), '02': ticket('resolved'), '03': ticket('working', ['001', '02']) }, { field: 'status', values: ['shipped', 'resolved'] });
+  const f = fixture(t, { '001': ticket('shipped'), '02': ticket('resolved'), '03': ticket('working', ['001', '02']) }, { values: ['shipped', 'resolved'] });
   renameSync(f.path('001'), join(f.root, 'issues', '001-新标题.md'));
   mkdirSync(join(f.root, 'issues', 'archive'));
   writeFileSync(join(f.root, 'issues', 'archive', '99-old.md'), '历史文件不参与当前票集');
@@ -246,7 +246,7 @@ test('同目录的不同票集配置各有独立历史', t => {
   mkdirSync(join(f.root, 'other'));
   writeFileSync(join(f.root, 'other', '01-other.md'), ticket());
   const g = { config: join(f.root, 'other-config.json') };
-  writeFileSync(g.config, JSON.stringify({ tickets: 'other', completion: { field: 'status', values: ['resolved'] } }));
+  writeFileSync(g.config, JSON.stringify({ tickets: 'other', completion: { values: ['resolved'] } }));
   const first = run(f, 'set-status', '01', 'resolved');
   assert.equal(first.status, 0, first.stderr);
   assert.deepEqual(run(g, 'history').data.events, []);

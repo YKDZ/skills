@@ -37,7 +37,7 @@ export function inspect(sources, completion) {
     let blocked_by = null;
     const nodes = Object.create(null);
     const values = Object.create(null);
-    for (const field of [completion.field, 'blocked_by']) {
+    for (const field of ['status', 'blocked_by']) {
       if (duplicates.has(field)) continue;
       const node = document.get(field, true);
       if (!node) {
@@ -70,7 +70,7 @@ export function inspect(sources, completion) {
         const trailing = /(?:\r?\n)+$/.exec(source.text.slice(range.start, range.end));
         if (trailing) range.end -= trailing[0].length;
       }
-      if (field === completion.field) {
+      if (field === 'status') {
         if (isScalar(node) && typeof node.value === 'string' && node.value.trim()) status = node.value;
         else issues.push(issue(source, 'INVALID_FIELD', `字段 ${field} 必须是非空字符串。`, { field }));
       } else if (isSeq(node) && node.items.every(item => isScalar(item) && typeof item.value === 'string' && /^\d+$/.test(item.value))) {

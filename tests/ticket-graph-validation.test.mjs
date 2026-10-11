@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const cli = fileURLToPath(new URL('../skills/ticket-graph/scripts/ticket-graph.mjs', import.meta.url));
 
-function fixture(t, files, completion = { field: 'status', values: ['resolved'] }) {
+function fixture(t, files, completion = { values: ['resolved'] }) {
   const root = mkdtempSync(join(tmpdir(), 'ticket-graph-validation-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'issues'));
@@ -249,15 +249,6 @@ test('空值字段可通过命令修复，保留相邻注释与空行', t => {
   const result = run(f, 'set-status', '01', 'resolved');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(f.file('01-null.md'), 'utf8'), '---\nstatus: "resolved"\n# 前置说明\nblocked_by: []\n---\n正文\n');
-});
-
-test('配置字段名称不会从 JavaScript 对象原型取得不存在的编辑位置', t => {
-  const original = '---\nblocked_by: []\n---\n正文\n';
-  const f = fixture(t, { '01-missing.md': original }, { field: 'constructor', values: ['resolved'] });
-  const result = run(f, 'set-status', '01', 'resolved');
-  assert.equal(result.status, 1);
-  assert.equal(JSON.parse(result.stderr).error.code, 'UNEDITABLE_FIELD');
-  assert.equal(readFileSync(f.file('01-missing.md'), 'utf8'), original);
 });
 
 test('修复错类型字段时，结果与历史保留实际旧值', t => {

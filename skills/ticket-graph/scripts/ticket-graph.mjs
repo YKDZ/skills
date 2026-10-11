@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync, readdirSync, writeFileSync, renameSync, unlinkSync, statSync, appendFileSync, openSync, closeSync, realpathSync, writeSync, readSync, fstatSync } from 'node:fs';
-import { dirname, resolve, join } from 'node:path';
+import { dirname, resolve, join, relative, sep, isAbsolute } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { inspect, replaceValue } from './graph.mjs';
+import validateConfig from './vendor/config-validator.mjs';
 
 class Failure extends Error {
   constructor(code, message, details = {}, exitCode = 1) {
@@ -15,9 +17,10 @@ class Failure extends Error {
 }
 
 const commands = {
+  init: 'init --tickets <目录> --completion-value <完成值>：创建配置；可重复提供完成值。',
   check: '检查字段、引用、自依赖和环。',
   list: '查询当前票；--filter all|unblocked|blocked 筛选结果，默认 all。',
-  'set-status': 'set-status <票标识> <状态值>：修改配置指定的完成字段。',
+  'set-status': 'set-status <票标识> <状态值>：修改票头的 status。',
   'set-deps': 'set-deps <票标识> <前置票>...：替换依赖；使用 --clear 显式清空。',
   history: '查询工具记录的变更；--ticket <票标识> 只查询指定票。',
 };
@@ -29,6 +32,7 @@ function parse(argv) {
     parsed = parseArgs({ args: argv, allowPositionals: true, tokens: true, options: {
       config: { type: 'string' }, help: { type: 'boolean', short: 'h' },
       filter: { type: 'string' }, ticket: { type: 'string' }, clear: { type: 'boolean' },
+      tickets: { type: 'string' }, 'completion-value': { type: 'string', multiple: true },
     } });
   } catch (error) {
     if (!error.code?.startsWith('ERR_PARSE_ARGS')) throw error;
@@ -40,14 +44,15 @@ function parse(argv) {
   if (!command || !values.config) usage('需要命令和 --config <配置文件>，使用 --help 查看帮助。');
   const seen = new Set();
   for (const token of tokens.filter(token => token.kind === 'option')) {
-    if (seen.has(token.name)) usage(`选项不能重复：--${token.name}`);
+    if (seen.has(token.name) && token.name !== 'completion-value') usage(`选项不能重复：--${token.name}`);
     seen.add(token.name);
   }
-  for (const [option, allowed] of Object.entries({ filter: 'list', ticket: 'history', clear: 'set-deps' })) {
+  for (const [option, allowed] of Object.entries({ filter: 'list', ticket: 'history', clear: 'set-deps', tickets: 'init', 'completion-value': 'init' })) {
     if (values[option] !== undefined && command !== allowed) usage(`--${option} 仅用于 ${allowed}。`);
   }
   if (values.filter !== undefined && !['all', 'unblocked', 'blocked'].includes(values.filter)) usage('筛选值应为 all、unblocked 或 blocked。');
-  if (['check', 'list', 'history'].includes(command) && args.length) usage(`${command} 不接受位置参数。`);
+  if (['init', 'check', 'list', 'history'].includes(command) && args.length) usage(`${command} 不接受位置参数。`);
+  if (command === 'init' && (values.tickets === undefined || !values['completion-value']?.length)) usage('init 需要 --tickets <目录> 和至少一个 --completion-value <完成值>。');
   if (command === 'set-status' && (args.length !== 2 || !args[1].trim())) usage('set-status 需要票标识和非空状态值。');
   if (command === 'set-deps' && (values.clear ? args.length !== 1 : args.length < 2)) usage('set-deps 需要票标识和前置票；清空请使用 --clear。');
   const ids = command === 'set-status' ? args.slice(0, 1) : command === 'set-deps' ? args : values.ticket === undefined ? [] : [values.ticket];
@@ -62,8 +67,14 @@ ${command ? `${command}：${commands[command]}` : Object.entries(commands).map((
 根命令及各子命令均可用 --help；帮助不读取配置或票据。
 
 配置示例（相对路径以配置所在目录为准）：
-  {"tickets":"issues","completion":{"field":"status","values":["resolved"]}}
+  {"tickets":"issues","completion":{"values":["resolved"]}}
 每个票集使用一份配置，不自动查找或合并配置。
+init 必须指定 --tickets 和至少一个 --completion-value；不会覆盖已有文件。
+配置的父目录须已存在；init 不创建或检查票目录，不迁移票据，创建后用 check 检查票图。
+配置可直接编辑，各命令共用校验；缺失、错类型及多余字段会报告文件和字段路径。
+结构定义：${fileURLToPath(new URL('../ticket-graph.schema.json', import.meta.url))}
+init 写入的 $schema 仅供编辑器使用，跨盘时用本地文件 URL；移动文件使引用失效后需更新，命令仍离线校验。
+旧配置须移除 completion.field；票头的状态字段统一为 status，旧历史保留原字段名。
 票目录只读取本层数字前缀的 .md 文件，不递归；数字前缀作为标识并保留前导零。
 例如 01-任务.md：
   ---
@@ -76,6 +87,7 @@ blocked_by 为数字字符串数组，无依赖用 []。机器字段使用直接
 正文中的字段不参与计算。首次接入需迁移旧字段，不维护两份当前元数据。
 
 示例：
+  node ticket-graph.mjs --config ticket-graph.json init --tickets issues --completion-value resolved
   node ticket-graph.mjs --config ticket-graph.json list --filter unblocked
   node ticket-graph.mjs --config ticket-graph.json set-status 01 resolved
   node ticket-graph.mjs --config ticket-graph.json set-deps 03 01 02
@@ -92,7 +104,8 @@ unblocked/blocked 仅筛选未完成票，按直接前置票是否完成判定�
 配置、票文件与历史均留在项目中，历史不参与当前票图查询。
 成功输出一个 JSON，退出 0；用法错误退出 2，其他预期失败退出 1，错误 JSON 写入标准错误。
 查询无匹配项返回空数组及范围；查询失败不返回空结果。无变化时 changed 为 false。
-失败可能发生在写入后，须查看 effects 中的 ticketSaved、historySaved 及实际值；不要直接重试或回滚。
+失败可能发生在写入后，须核对 effects；configCreated 表示已创建配置文件，configSaved 表示已完整保存。
+configSaved 为 null 表示写入结果不确定；票据修改查看 ticketSaved、historySaved 及实际值，不直接重试或回滚。
 `;
 }
 
@@ -110,13 +123,47 @@ function configuration(path) {
     if (!(error instanceof SyntaxError)) throw error;
     throw new Failure('INVALID_CONFIG', '配置必须是有效 JSON。', { file });
   }
-  const string = item => typeof item === 'string' && item.trim().length > 0;
-  if (!value || !string(value.tickets) || !string(value.completion?.field)
-    || value.completion.field === 'blocked_by' || !Array.isArray(value.completion.values)
-    || !value.completion.values.length || !value.completion.values.every(string)) {
-    throw new Failure('INVALID_CONFIG', '配置需要 tickets、completion.field 和非空的 completion.values 字符串数组；完成字段不能为 blocked_by。', { file });
+  return configValue(file, value);
+}
+
+function configValue(file, value) {
+  if (!validateConfig(value)) {
+    const issues = validateConfig.errors.map(({ instancePath, keyword, params }) => {
+      const property = params.missingProperty ?? params.additionalProperty;
+      const path = instancePath + (property === undefined ? '' : `/${property.replaceAll('~', '~0').replaceAll('/', '~1')}`);
+      const types = { object: '对象', array: '数组', string: '字符串' };
+      const messages = { required: '缺少必填字段。', additionalProperties: '不支持此配置字段。', type: `应为${types[params.type] ?? params.type}。`, pattern: '必须包含非空白字符。', minItems: '至少需要一个完成值。' };
+      const message = path === '/completion/field'
+        ? '状态字段已固定为 status，请移除 completion.field；旧票的其他状态字段须先迁移为 status。'
+        : messages[keyword] ?? '不符合配置结构定义。';
+      return { path, keyword, message };
+    });
+    throw new Failure('INVALID_CONFIG', '配置结构有误，请按字段位置修正。', { file, issues });
   }
   return { file, directory: resolve(dirname(file), value.tickets), completion: value.completion, history: `${file}.history.jsonl` };
+}
+
+function initialize(options, effects) {
+  const file = resolve(options.config);
+  const schema = fileURLToPath(new URL('../ticket-graph.schema.json', import.meta.url));
+  const relativePath = relative(dirname(file), schema);
+  const reference = isAbsolute(relativePath) ? pathToFileURL(schema).href : `./${relativePath.split(sep).map(encodeURIComponent).join('/')}`;
+  const value = { $schema: reference, tickets: options.tickets, completion: { values: options['completion-value'] } };
+  const config = configValue(file, value);
+  let fd;
+  try {
+    fd = openSync(file, 'wx');
+    effects.configCreated = true;
+    effects.configSaved = null;
+    writeFileSync(fd, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+    effects.configSaved = true;
+  } catch (error) {
+    if (error.code === 'EEXIST') throw new Failure('CONFIG_EXISTS', '配置已存在，未覆盖。', { file });
+    throw new Failure('WRITE_FAILED', '无法完成配置写入，请核对 effects 中的保存结果。', { file, cause: error.code });
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+  return { ok: true, command: 'init', scope: { config: file, tickets: config.directory }, created: true };
 }
 
 function sources(config) {
@@ -135,7 +182,7 @@ function update(config, options, effects) {
   const matches = current.tickets.filter(ticket => ticket.id === options.args[0]);
   if (matches.length !== 1) throw new Failure('INVALID_TARGET', '目标票不存在或标识重复。', { ticket: options.args[0], files: matches.map(ticket => ticket.file) });
   const ticket = matches[0];
-  const field = options.command === 'set-status' ? config.completion.field : 'blocked_by';
+  const field = options.command === 'set-status' ? 'status' : 'blocked_by';
   const before = ticket.values[field];
   const after = options.command === 'set-status' ? options.args[1] : options.clear ? [] : options.args.slice(1);
   Object.assign(effects, { ticket: ticket.id, field, before, after });
@@ -250,6 +297,7 @@ async function withLock(config, action) {
 
 async function main(options, effects) {
   if (Object.hasOwn(options, 'help')) return help(options.help);
+  if (options.command === 'init') return initialize(options, effects);
   const config = configuration(options.config);
   if (options.command === 'history') return history(config, options.ticket);
   if (options.command.startsWith('set-')) return withLock(config, () => update(config, options, effects));
@@ -266,7 +314,7 @@ async function main(options, effects) {
   return { ok: true, command: options.command, scope, filter, total: tickets.length, tickets: selected };
 }
 
-const effects = { ticketSaved: false, historySaved: false };
+const effects = { configCreated: false, configSaved: false, ticketSaved: false, historySaved: false };
 function output(fd, text) {
   const bytes = Buffer.from(text);
   let offset = 0;
