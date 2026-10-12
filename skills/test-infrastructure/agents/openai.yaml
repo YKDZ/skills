@@ -1,5 +1,5 @@
 interface:
   display_name: "Test Infrastructure"
-  short_description: "设计可复用的测试基础设施，统一环境准备、运行、清理与重建"
+  short_description: "指导测试基础设施的建立与迁移，收拢环境准备、运行和清理工作"
 policy:
   allow_implicit_invocation: false
