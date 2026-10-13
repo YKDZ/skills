@@ -7,11 +7,11 @@
   "documentation": "https://ajv.js.org/standalone.html",
   "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
   "generatedBy": "ajv@8.20.0 + esbuild@0.28.2",
-  "buildScript": "scripts/build-ticket-graph-config.mjs",
+  "buildScript": "scripts/build-ticket-graph-config.mts",
   "rebuildFromRepositoryRoot": [
     "pnpm install --frozen-lockfile --ignore-scripts",
     "pnpm run build:ticket-graph-config"
   ],
   "dependencyVersionsAndIntegrity": "依赖版本与完整性校验信息由仓库根目录的 package.json 和 pnpm-lock.yaml 管理。",
-  "distribution": "校验器及所需运行依赖已打包。复制完整技能目录即可离线使用；使用者只需 Node.js 22+，无需安装依赖或构建。"
+  "distribution": "校验器及所需运行依赖已打包。复制完整技能目录即可离线使用；使用者只需 Node.js 24.12 及以上版本，无需安装依赖或构建。"
 }

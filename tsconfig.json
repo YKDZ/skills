@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": false,
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "customConditions": ["source"],
+    "erasableSyntaxOnly": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rewriteRelativeImportExtensions": true,
+    "target": "es2024",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": [
+    "*.config.ts",
+    "scripts/**/*.mts",
+    "skills/**/*.mts",
+    "tests/**/*.mts"
+  ]
+}

@@ -1,0 +1,61 @@
+name: 检查
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 完整检查
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: 设置 Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: package.json
+      - name: 设置 pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          cache: true
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+      - name: 执行完整检查
+        run: pnpm run check
+
+  compatibility:
+    name: 最低运行版本
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: 设置 Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.12.0
+      - name: 设置 pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          cache: true
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+      - name: 验证最低运行版本
+        run: pnpm run test

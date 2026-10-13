@@ -1,13 +1,31 @@
 {
-  "packageManager": "pnpm@12.5.1+sha512.e3f305bc784a2bc89f5ad3b6138889470fae8d2af5f36b61216ec91c2c3d64089775f9de38aac331044ea40f245cb0d5666392dfdf65824e1907ef6a2c62de5f",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build:ticket-graph-config": "node scripts/build-ticket-graph-config.mjs",
-    "build:ticket-graph-vendor": "node scripts/build-ticket-graph-vendor.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "build:ticket-graph-config": "node scripts/build-ticket-graph-config.mts",
+    "build:ticket-graph-vendor": "node scripts/build-ticket-graph-vendor.mts",
+    "format:check": "oxfmt --list-different .",
+    "format:write": "oxfmt --write .",
+    "lint": "oxlint --quiet --format=unix --ignore-pattern node_modules .",
+    "lint:fix": "oxlint --format=unix . --fix",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
+    "test": "node --test tests/*.test.mts",
+    "check:generated": "node scripts/check-generated.mts",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run check:generated",
+    "fix": "pnpm run lint:fix && pnpm run format:write"
   },
   "devDependencies": {
+    "@types/node": "^24.13.3",
     "ajv": "8.20.0",
     "esbuild": "0.28.2",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript-7": "npm:typescript@^7.0.2",
     "yaml": "2.9.1"
-  }
+  },
+  "engines": {
+    "node": "24.21.0"
+  },
+  "packageManager": "pnpm@12.9.1"
 }
