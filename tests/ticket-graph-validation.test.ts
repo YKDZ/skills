@@ -42,7 +42,7 @@ function ticket(status = "open", blockedBy: string[] = []) {
 function run(f: { config: string }, ...args: string[]) {
   const result = spawnSync(
     process.execPath,
-    [cli, "--config", f.config, ...args],
+    [cli, args[0]!, "--config", f.config, ...args.slice(1)],
     { encoding: "utf8", cwd: tmpdir() },
   );
   assert.ifError(result.error);
@@ -243,9 +243,9 @@ void test("修改块标量状态保留行末注释、其他字段、正文及 CR
   const original =
     "---\r\nstatus: |- # 当前状态\r\n  open\r\nblocked_by: [] # 前置\r\nextra:\r\n  status: 保留\r\n---\r\n# 任务\r\n\r\nstatus: 正文保持原样\r\n";
   const f = fixture(t, { "01-block.md": original });
-  const result = run(f, "set-status", "01", "resolved");
+  const result = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).changed, true);
+  assert.equal(success(result.stdout).results[0]!.changed, true);
   assert.equal(
     readFileSync(f.file("01-block.md"), "utf8"),
     '---\r\nstatus: "resolved" # 当前状态\r\nblocked_by: [] # 前置\r\nextra:\r\n  status: 保留\r\n---\r\n# 任务\r\n\r\nstatus: 正文保持原样\r\n',
@@ -338,7 +338,7 @@ void test("可修复错类型的块映射依赖，并完整保留其他字段", 
     "---\nstatus: open\nblocked_by:\n  wrong:\n    - true # 原值尾注\nowner: 张三\n---\n正文\n";
   const f = fixture(t, { "01-bad-type.md": original });
   const before = run(f, "check");
-  assert.equal(JSON.parse(before.stderr).error.issues[0].code, "INVALID_FIELD");
+  assert.equal(failure(before.stderr).error.issues[0]!.code, "INVALID_FIELD");
   const result = run(f, "set-deps", "01", "--clear");
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
@@ -365,7 +365,7 @@ void test("空值字段可通过命令修复，保留相邻注释与空行", (t)
   const f = fixture(t, {
     "01-null.md": "---\nstatus:\n# 前置说明\nblocked_by: []\n---\n正文\n",
   });
-  const result = run(f, "set-status", "01", "resolved");
+  const result = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     readFileSync(f.file("01-null.md"), "utf8"),
@@ -377,18 +377,18 @@ void test("修复错类型字段时，结果与历史保留实际旧值", (t) =>
   const f = fixture(t, {
     "01-number.md": "---\nstatus: 7\nblocked_by: []\n---\n正文\n",
   });
-  const result = run(f, "set-status", "01", "resolved");
+  const result = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).before, 7);
+  assert.equal(success(result.stdout).results[0]!.before, 7);
   const history = run(f, "history", "--ticket", "01");
   assert.equal(history.status, 0, history.stderr);
-  assert.equal(JSON.parse(history.stdout).events[0].before, 7);
+  assert.equal(success(history.stdout).events[0]!.before, 7);
 });
 
 void test("旧值无法被 JSON 忠实记录时拒绝修改，避免历史把非有限数字记成空值", (t) => {
   const original = "---\nstatus: .inf\nblocked_by: []\n---\n正文\n";
   const f = fixture(t, { "01-infinity.md": original });
-  const result = run(f, "set-status", "01", "resolved");
+  const result = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(result.status, 1);
   assert.equal(failure(result.stderr).error.code, "UNEDITABLE_FIELD");
   assert.equal(readFileSync(f.file("01-infinity.md"), "utf8"), original);
@@ -401,12 +401,12 @@ void test("JSON 转换会合并映射键或舍入整数时拒绝修改且不追�
   ];
   for (const original of cases) {
     const f = fixture(t, { "01-lossy.md": original });
-    const result = run(f, "set-status", "01", "resolved");
+    const result = run(f, "set-status", "01", "--status", "resolved");
     assert.equal(result.status, 1, original);
     assert.equal(failure(result.stderr).error.code, "UNEDITABLE_FIELD");
     assert.equal(readFileSync(f.file("01-lossy.md"), "utf8"), original);
     const history = run(f, "history", "--ticket", "01");
     assert.equal(history.status, 0, history.stderr);
-    assert.deepEqual(JSON.parse(history.stdout).events, []);
+    assert.deepEqual(success(history.stdout).events, []);
   }
 });

@@ -169,6 +169,9 @@ importers:
       '@types/node':
         specifier: ^24.13.3
         version: 24.19.2
+      '@ykdz/cli-contract':
+        specifier: 0.2.1
+        version: 0.2.1
       ajv:
         specifier: 8.20.0
         version: 8.20.0
@@ -623,6 +626,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
   '@types/node@24.19.2':
     resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
 
@@ -745,6 +751,10 @@ packages:
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [win32]
+
+  '@ykdz/cli-contract@0.2.1':
+    resolution: {integrity: sha512-1cp3+qQNHOW0fuIWOjkU5ozQbbTAuSqd7AAgqHp2Hs/p63b8oFOUzurgnrwAucWoVil7r2gkplB0klZg57dMRA==}
+    engines: {node: '>=24'}
 
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
@@ -1026,6 +1036,8 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.87.0':
     optional: true
 
+  '@standard-schema/spec@1.1.0': {}
+
   '@types/node@24.19.2':
     dependencies:
       undici-types: 7.24.6
@@ -1089,6 +1101,11 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
+
+  '@ykdz/cli-contract@0.2.1':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@types/node': 24.19.2
 
   ajv@8.20.0:
     dependencies:

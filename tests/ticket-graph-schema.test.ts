@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 
 import { Ajv } from "ajv";
 
+import { success, failure } from "./cli-output.ts";
+
 const cli = fileURLToPath(
   new URL("../skills/ticket-graph/scripts/ticket-graph.mts", import.meta.url),
 );
@@ -104,7 +106,7 @@ void test("公开配置定义与命令对同一组项目配置判断一致并保
     writeFileSync(configPath, original);
     const result = spawnSync(
       process.execPath,
-      [cli, "--config", configPath, "check"],
+      [cli, "check", "--config", configPath],
       { encoding: "utf8", cwd: tmpdir() },
     );
     assert.ifError(result.error);
@@ -115,10 +117,10 @@ void test("公开配置定义与命令对同一组项目配置判断一致并保
     );
     if (expected) {
       assert.equal(result.stderr, "");
-      assert.equal(JSON.parse(result.stdout).valid, true);
+      assert.equal(success(result.stdout).valid, true);
     } else {
       assert.equal(result.stdout, "");
-      assert.equal(JSON.parse(result.stderr).error.code, "INVALID_CONFIG");
+      assert.equal(failure(result.stderr).error.code, "INVALID_CONFIG");
     }
     assert.equal(readFileSync(configPath, "utf8"), original);
   }

@@ -54,14 +54,14 @@ export function inspect(sources: TicketSource[], completion: Completion) {
         duplicates.add(field);
         issues.push(
           issue(source, "DUPLICATE_FIELD", `YAML 字段 ${field} 重复。`, {
-            field,
+            ...(field === undefined ? {} : { field }),
             offset: offset + error.pos[0],
           }),
         );
       } else {
         issues.push(
           issue(source, "INVALID_YAML", `YAML 文件头损坏：${error.code}。`, {
-            field,
+            ...(field === undefined ? {} : { field }),
             offset: offset + error.pos[0],
             reason: error.code,
           }),

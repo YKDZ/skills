@@ -2,6 +2,7 @@ import type {
   JsonValue,
   Effects,
   Issue,
+  ChangeResult,
 } from "../skills/ticket-graph/scripts/types.ts";
 
 // 各测试按所调用命令断言这些外部结果；解析本身不承担运行时校验。
@@ -38,9 +39,11 @@ export interface Success {
   after: JsonValue;
   history: string;
   created: boolean;
+  results: ChangeResult[];
 }
 
 export interface ErrorOutput {
+  kind?: string;
   ok: false;
   error: {
     code: string;
@@ -56,9 +59,11 @@ export interface ErrorOutput {
 }
 
 export function success(text: string): Success {
-  return JSON.parse(text) as Success;
+  const wire = JSON.parse(text);
+  return { ...wire.data, command: wire.command } as Success;
 }
 
 export function failure(text: string): ErrorOutput {
-  return JSON.parse(text) as ErrorOutput;
+  const wire = JSON.parse(text);
+  return (wire.data ?? wire) as ErrorOutput;
 }

@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "@ykdz/cli-contract": "0.2.1",
     "ajv": "8.20.0",
     "esbuild": "0.28.2",
     "oxfmt": "^0.71.0",

@@ -60,6 +60,7 @@ const result = await build({
   },
   outfile: outputPath,
   bundle: true,
+  minify: true,
   format: "esm",
   platform: "node",
   target: "node24.12",

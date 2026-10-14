@@ -36,7 +36,7 @@ function fixture(t: TestContext) {
 function run(f: { config: string }, ...args: string[]) {
   const result = spawnSync(
     process.execPath,
-    [cli, "--config", f.config, ...args],
+    [cli, args[0]!, "--config", f.config, ...args.slice(1)],
     { encoding: "utf8", cwd: tmpdir() },
   );
   assert.ifError(result.error);
@@ -71,9 +71,9 @@ void test("配置只指定完成值，状态修改固定使用 status 并保留�
   };
   writeFileSync(`${f.config}.history.jsonl`, `${JSON.stringify(legacy)}\n`);
   assert.equal(run(f, "check").status, 0);
-  const update = run(f, "set-status", "01", "shipped");
+  const update = run(f, "set-status", "01", "--status", "shipped");
   assert.equal(update.status, 0, update.stderr);
-  assert.equal(update.data.field, "status");
+  assert.equal(update.data.results[0]!.field, "status");
   assert.equal(
     readFileSync(ticket, "utf8"),
     '---\nstatus: "shipped"\nphase: legacy\nblocked_by: []\n---\n正文。\n',
@@ -82,7 +82,7 @@ void test("配置只指定完成值，状态修改固定使用 status 并保留�
   const history = run(f, "history").data.events;
   assert.deepEqual(history[0], legacy);
   assert.equal(history[1]!.field, "status");
-  assert.equal(run(f, "set-status", "01", "working").status, 0);
+  assert.equal(run(f, "set-status", "01", "--status", "working").status, 0);
   assert.equal(run(f, "list").data.tickets[0]!.delivery_complete, false);
 });
 
@@ -119,7 +119,7 @@ void test("初始化保留目录与多个完成值，生成的配置可直接检
   assert.deepEqual(readdirSync(f.root).sort(), ["issues", "ticket-graph.json"]);
   assert.equal(existsSync(`${f.config}.history.jsonl`), false);
   assert.equal(run(f, "check").status, 0);
-  assert.equal(run(f, "set-status", "01", " shipped ").status, 0);
+  assert.equal(run(f, "set-status", "01", "--status", " shipped ").status, 0);
   assert.equal(run(f, "list").data.tickets[0]!.delivery_complete, true);
 });
 
@@ -135,7 +135,7 @@ void test("所有读取命令拒绝已移除的配置字段，并定位字段且
     ["check"],
     ["list"],
     ["history"],
-    ["set-status", "01", "resolved"],
+    ["set-status", "01", "--status", "resolved"],
     ["set-deps", "01", "--clear"],
   ]) {
     const result = run(f, ...args);
@@ -202,8 +202,7 @@ void test("初始化拒绝无效参数和候选配置，已有配置保持原样
   ]) {
     const result = run(f, ...args);
     assert.equal(result.status, 2, JSON.stringify(args));
-    assert.equal(result.error.error.code, "USAGE");
-    assert.equal(result.error.effects.configCreated, false);
+    assert.equal(result.error.kind, "usageFailure");
     assert.deepEqual(readdirSync(f.root), []);
   }
   for (const [tickets, value, path] of [
@@ -256,9 +255,9 @@ void test("缺少或不可写的父目录使初始化失败且不产生文件", 
       process.execPath,
       [
         cli,
+        "init",
         "--config",
         f.config,
-        "init",
         "--tickets",
         "issues",
         "--completion-value",
@@ -290,9 +289,9 @@ void test("并行初始化同一配置只有一次创建成功", async (t) => {
     }>((resolve, reject) => {
       const child = spawn(process.execPath, [
         cli,
+        "init",
         "--config",
         f.config,
-        "init",
         "--tickets",
         "issues",
         "--completion-value",
@@ -318,14 +317,12 @@ void test("并行初始化同一配置只有一次创建成功", async (t) => {
   );
   const winner = results.find((result) => result.status === 0);
   assert.ok(winner);
-  assert.equal(JSON.parse(winner.stdout).created, true);
+  assert.equal(success(winner.stdout).created, true);
   assert.deepEqual(
     JSON.parse(readFileSync(f.config, "utf8")).completion.values,
     [winner.value],
   );
-  const loser = JSON.parse(
-    results.find((result) => result.status === 1)!.stderr,
-  );
+  const loser = failure(results.find((result) => result.status === 1)!.stderr);
   assert.equal(loser.error.code, "CONFIG_EXISTS");
   assert.equal(loser.effects.configCreated, false);
 });
@@ -343,9 +340,9 @@ void test(
         process.execPath,
         [
           cli,
+          "init",
           "--config",
           f.config,
-          "init",
           "--tickets",
           "issues",
           "--completion-value",
@@ -384,9 +381,9 @@ void test(
         "init-test",
         process.execPath,
         cli,
+        "init",
         "--config",
         f.config,
-        "init",
         "--tickets",
         "issues",
         "--completion-value",
@@ -466,9 +463,9 @@ void test("复制技能后可离线初始化，特殊字符路径的结构定义
     process.execPath,
     [
       localCli,
+      "init",
       "--config",
       relative(f.root, config),
-      "init",
       "--tickets",
       ".",
       "--completion-value",
@@ -477,7 +474,7 @@ void test("复制技能后可离线初始化，特殊字符路径的结构定义
     offline,
   );
   assert.equal(init.status, 0, init.stderr);
-  assert.deepEqual(JSON.parse(init.stdout).scope, { config, tickets: project });
+  assert.deepEqual(success(init.stdout).scope, { config, tickets: project });
   const value = JSON.parse(readFileSync(config, "utf8"));
   assert.equal(
     fileURLToPath(new URL(value.$schema, pathToFileURL(config))),
@@ -487,25 +484,26 @@ void test("复制技能后可离线初始化，特殊字符路径的结构定义
     join(project, "01-a.md"),
     "---\nstatus: open\nblocked_by: []\n---\n",
   );
-  for (const args of [["check"], ["set-status", "01", "done"], ["list"]]) {
+  for (const args of [
+    ["check"],
+    ["set-status", "01", "--status", "done"],
+    ["list"],
+  ]) {
     const result = spawnSync(
       process.execPath,
-      [localCli, "--config", config, ...args],
+      [localCli, args[0]!, "--config", config, ...args.slice(1)],
       offline,
     );
     assert.equal(result.status, 0, result.stderr);
     if (args[0] === "list")
-      assert.equal(
-        JSON.parse(result.stdout).tickets[0].delivery_complete,
-        true,
-      );
+      assert.equal(success(result.stdout).tickets[0]!.delivery_complete, true);
   }
   value.$schema = "./不存在的定义.json";
   writeFileSync(config, JSON.stringify(value));
   assert.equal(
     spawnSync(
       process.execPath,
-      [localCli, "--config", config, "check"],
+      [localCli, "check", "--config", config],
       offline,
     ).status,
     0,

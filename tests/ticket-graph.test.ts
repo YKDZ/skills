@@ -52,7 +52,7 @@ function ticket(status = "open", deps: string[] = []) {
 function run(f: { config: string }, ...args: string[]) {
   const result = spawnSync(
     process.execPath,
-    [cli, "--config", f.config, ...args],
+    [cli, args[0]!, "--config", f.config, ...args.slice(1)],
     { encoding: "utf8", cwd: tmpdir() },
   );
   assert.ifError(result.error);
@@ -72,7 +72,7 @@ function runAsync(f: { config: string }, ...args: string[]) {
   }>((resolve, reject) => {
     const child = spawn(
       process.execPath,
-      [cli, "--config", f.config, ...args],
+      [cli, args[0]!, "--config", f.config, ...args.slice(1)],
       { cwd: tmpdir() },
     );
     let stdout = "",
@@ -137,7 +137,7 @@ void test("帮助不要求配置；无效用法和配置返回可定位的结构
   const f = fixture(t, {});
   const missing = run(f, "set-deps", "01");
   assert.equal(missing.status, 2);
-  assert.equal(missing.error.error.code, "USAGE");
+  assert.equal(missing.error.kind, "usageFailure");
   writeFileSync(
     f.config,
     JSON.stringify({ tickets: "issues", completion: { values: [] } }),
@@ -152,12 +152,12 @@ void test("修改完成字段保留其余原文，重复设置不重写或追加
   const before =
     '---\r\n# 注释\r\nstatus: open # 仍需实施\r\nblocked_by: []\r\nextra: "原样保留"\r\n---\r\n正文：status: open\r\n';
   const f = fixture(t, { "01": before }, { values: ["shipped", "resolved"] });
-  const result = run(f, "set-status", "01", "shipped");
+  const result = run(f, "set-status", "01", "--status", "shipped");
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.data.changed, true);
-  assert.equal(result.data.field, "status");
-  assert.equal(result.data.before, "open");
-  assert.equal(result.data.after, "shipped");
+  assert.equal(result.data.results[0]!.changed, true);
+  assert.equal(result.data.results[0]!.field, "status");
+  assert.equal(result.data.results[0]!.before, "open");
+  assert.equal(result.data.results[0]!.after, "shipped");
   assert.equal(
     readFileSync(f.path("01"), "utf8"),
     before.replace("status: open #", 'status: "shipped" #'),
@@ -169,9 +169,9 @@ void test("修改完成字段保留其余原文，重复设置不重写或追加
   assert.equal(event.before, "open");
   assert.equal(event.after, "shipped");
   assert.ok(Number.isFinite(Date.parse(event.time)));
-  const again = run(f, "set-status", "01", "shipped");
+  const again = run(f, "set-status", "01", "--status", "shipped");
   assert.equal(again.status, 0, again.stderr);
-  assert.equal(again.data.changed, false);
+  assert.equal(again.data.results[0]!.changed, false);
   assert.equal(readFileSync(f.history, "utf8"), history);
   assert.equal(run(f, "list").data.tickets[0]!.delivery_complete, true);
 });
@@ -193,7 +193,7 @@ void test("替换和显式清空依赖留下可筛选的历史，损坏历史不
   assert.equal(cleared.status, 0, cleared.stderr);
   assert.deepEqual(cleared.data.before, ["01", "02"]);
   assert.deepEqual(cleared.data.after, []);
-  assert.equal(run(f, "set-status", "02", "resolved").status, 0);
+  assert.equal(run(f, "set-status", "02", "--status", "resolved").status, 0);
   const history = run(f, "history", "--ticket", "03");
   assert.equal(history.status, 0, history.stderr);
   assert.equal(history.data.events.length, 2);
@@ -240,12 +240,12 @@ void test("同一票集并行修改依赖不会共同形成新环", async (t) =>
 void test("票已保存而历史失败时报告部分结果", (t) => {
   const f = fixture(t, { "01": ticket() });
   mkdirSync(f.history);
-  const partial = run(f, "set-status", "01", "resolved");
+  const partial = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(partial.status, 1);
   assert.equal(partial.error.error.code, "HISTORY_WRITE_FAILED");
-  assert.equal(partial.error.effects.ticketSaved, true);
-  assert.notEqual(partial.error.effects.historySaved, true);
-  assert.equal(partial.error.effects.after, "resolved");
+  assert.equal(partial.error.effects.results![0]!.ticketSaved, true);
+  assert.notEqual(partial.error.effects.results![0]!.historySaved, true);
+  assert.equal(partial.error.effects.results![0]!.after, "resolved");
   assert.equal(run(f, "list").data.tickets[0]!.delivery_complete, true);
 });
 
@@ -260,17 +260,17 @@ void test(
     try {
       result = spawnSync(
         process.execPath,
-        [cli, "--config", g.config, "set-status", "01", "resolved"],
+        [cli, "set-status", "--config", g.config, "01", "--status", "resolved"],
         { stdio: ["ignore", full, "pipe"], encoding: "utf8" },
       );
     } finally {
       closeSync(full);
     }
     assert.equal(result.status, 1);
-    const error = JSON.parse(result.stderr);
+    const error = failure(result.stderr);
     assert.equal(error.error.code, "OUTPUT_FAILED");
-    assert.equal(error.effects.ticketSaved, true);
-    assert.equal(error.effects.historySaved, true);
+    assert.equal(error.effects.results![0]!.ticketSaved, true);
+    assert.equal(error.effects.results![0]!.historySaved, true);
     assert.equal(run(g, "list").data.tickets[0]!.delivery_complete, true);
     assert.equal(run(g, "history").data.events.length, 1);
   },
@@ -292,7 +292,7 @@ void test("新增依赖不能把读取失败当作无依赖，独立修改仍可
   const independent = run(f, "set-deps", "04", "05");
   assert.equal(independent.status, 0, independent.stderr);
   assert.equal(independent.data.valid, false);
-  assert.equal(run(f, "set-status", "01", "in-progress").status, 0);
+  assert.equal(run(f, "set-status", "01", "--status", "in-progress").status, 0);
 });
 
 void test("空结果保留查询范围，完成值可配置，改文件名后缀不改变标识", (t) => {
@@ -344,7 +344,7 @@ void test("复制完整技能目录后在不同模块配置下仅靠 Node 即可
       );
       for (const args of [
         ["check"],
-        ["set-status", "01", "resolved"],
+        ["set-status", "01", "--status", "resolved"],
         ["list"],
         ["history"],
       ]) {
@@ -352,9 +352,10 @@ void test("复制完整技能目录后在不同模块配置下仅靠 Node 即可
           process.execPath,
           [
             join(isolated, "scripts", "ticket-graph.mts"),
+            args[0]!,
             "--config",
             f.config,
-            ...args,
+            ...args.slice(1),
           ],
           {
             cwd: f.root,
@@ -364,7 +365,7 @@ void test("复制完整技能目录后在不同模块配置下仅靠 Node 即可
         );
         assert.ifError(result.error);
         assert.equal(result.status, 0, result.stderr);
-        assert.equal(JSON.parse(result.stdout).ok, true);
+        assert.equal(JSON.parse(result.stdout).kind, "data");
       }
       assert.equal(run(f, "list").data.tickets[0]!.delivery_complete, true);
     });
@@ -377,7 +378,7 @@ void test("无效参数、无法读取配置和写入前文件故障不改票或
     ["unknown"],
     ["set-deps", "01"],
     ["set-deps", "01", "02", "--clear"],
-    ["set-status", "01", ""],
+    ["set-status", "01", "--status", ""],
     ["list", "--filter", "ready"],
     ["check", "--ticket", "01"],
     ["list", "--wat"],
@@ -386,7 +387,6 @@ void test("无效参数、无法读取配置和写入前文件故障不改票或
     const result = run(f, ...args);
     assert.equal(result.status, 2, JSON.stringify(args));
     assert.equal(result.stdout, "");
-    assert.equal(result.error.effects.ticketSaved, false);
   }
   const absent = run({ config: join(f.root, "absent.json") }, "list");
   assert.equal(absent.status, 1);
@@ -399,7 +399,10 @@ void test("无效参数、无法读取配置和写入前文件故障不改票或
 void test("无变化不重写票或追加历史", (t) => {
   const f = fixture(t, { "01": ticket() });
   const before = statSync(f.path("01"));
-  assert.equal(run(f, "set-status", "01", "open").data.changed, false);
+  assert.equal(
+    run(f, "set-status", "01", "--status", "open").data.results[0]!.changed,
+    false,
+  );
   assert.equal(statSync(f.path("01")).mtimeMs, before.mtimeMs);
   assert.equal(existsSync(f.history), false);
 });
@@ -414,7 +417,7 @@ void test(
     try {
       const result = spawnSync(
         process.execPath,
-        [cli, "--config", f.config, "set-status", "01", "resolved"],
+        [cli, "set-status", "--config", f.config, "01", "--status", "resolved"],
         {
           encoding: "utf8",
           ...(process.getuid?.() === 0 ? { uid: 65534, gid: 65534 } : {}),
@@ -422,7 +425,7 @@ void test(
       );
       assert.ifError(result.error);
       assert.equal(result.status, 1, result.stderr);
-      const error = JSON.parse(result.stderr);
+      const error = failure(result.stderr);
       assert.equal(error.error.code, "LOCK_FAILED");
       assert.equal(error.effects.ticketSaved, false);
       assert.equal(readFileSync(f.path("01"), "utf8"), ticket());
@@ -443,14 +446,14 @@ void test(
       "script",
       [
         "-qefc",
-        `${process.execPath} ${cli} --config ${f.config} list`,
+        `${process.execPath} ${cli} list --config ${f.config}`,
         "/dev/null",
       ],
       { encoding: "utf8" },
     );
     assert.ifError(terminal.error);
     assert.equal(terminal.status, 0, terminal.stderr);
-    assert.deepEqual(JSON.parse(terminal.stdout), piped.data);
+    assert.deepEqual(success(terminal.stdout), piped.data);
     assert.equal(terminal.stderr, "");
   },
 );
@@ -464,10 +467,10 @@ void test("同目录的不同票集配置各有独立历史", (t) => {
     g.config,
     JSON.stringify({ tickets: "other", completion: { values: ["resolved"] } }),
   );
-  const first = run(f, "set-status", "01", "resolved");
+  const first = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(first.status, 0, first.stderr);
   assert.deepEqual(run(g, "history").data.events, []);
-  const second = run(g, "set-status", "01", "working");
+  const second = run(g, "set-status", "01", "--status", "working");
   assert.equal(second.status, 0, second.stderr);
   assert.notEqual(first.data.history, second.data.history);
   assert.equal(run(f, "history").data.events.length, 1);
@@ -476,10 +479,10 @@ void test("同目录的不同票集配置各有独立历史", (t) => {
 
 void test("没有末尾换行的有效历史在追加后仍能完整查询", (t) => {
   const f = fixture(t, { "01": ticket() });
-  assert.equal(run(f, "set-status", "01", "working").status, 0);
+  assert.equal(run(f, "set-status", "01", "--status", "working").status, 0);
   writeFileSync(f.history, readFileSync(f.history, "utf8").trimEnd());
   assert.equal(run(f, "history").data.events.length, 1);
-  const result = run(f, "set-status", "01", "resolved");
+  const result = run(f, "set-status", "01", "--status", "resolved");
   assert.equal(result.status, 0, result.stderr);
   const history = run(f, "history");
   assert.equal(history.status, 0, history.stderr);
@@ -489,9 +492,25 @@ void test("没有末尾换行的有效历史在追加后仍能完整查询", (t)
   );
 });
 
+void test("历史查询保留已有记录的附加信息，不收窄旧字段名", (t) => {
+  const f = fixture(t, { "01": ticket() });
+  const legacy = {
+    ticket: "01",
+    field: " ",
+    time: "2026-10-01T00:00:00Z",
+    before: "open",
+    after: "done",
+    note: { source: "旧工具", tags: ["保留"] },
+  };
+  writeFileSync(f.history, `${JSON.stringify(legacy)}\n`);
+  const result = run(f, "history");
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.data.events, [legacy]);
+});
+
 void test("下游短暂延迟读取时，长查询结果仍完整输出", async (t) => {
   const f = fixture(t, { "01": ticket("工作".repeat(30000)) });
-  const child = spawn(process.execPath, [cli, "--config", f.config, "list"]);
+  const child = spawn(process.execPath, [cli, "list", "--config", f.config]);
   child.stdout.setEncoding("utf8");
   let stdout = "",
     stderr = "";
@@ -510,7 +529,7 @@ void test("下游短暂延迟读取时，长查询结果仍完整输出", async 
   clearTimeout(timer);
   assert.equal(status, 0, stderr);
   assert.ok(
-    JSON.parse(stdout).tickets[0].status === "工作".repeat(30000),
+    success(stdout).tickets[0]!.status === "工作".repeat(30000),
     "长状态值须完整保留",
   );
 });

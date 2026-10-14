@@ -47,7 +47,7 @@ export interface Ticket extends TicketSource {
 }
 
 export interface IssueDetails {
-  field?: string | undefined;
+  field?: string;
   target?: string;
   reason?: string;
   offset?: number;
@@ -65,10 +65,22 @@ export interface Issue extends IssueDetails {
 export interface Effects {
   configCreated: boolean;
   configSaved: boolean | null;
-  ticketSaved: boolean;
-  historySaved: boolean | null;
+  ticketSaved?: boolean;
+  historySaved?: boolean | null;
+  results?: ChangeResult[];
   ticket?: string;
   field?: Field;
-  before?: JsonValue | undefined;
+  before?: JsonValue;
   after?: JsonValue;
+}
+
+export interface ChangeResult {
+  ticket: string;
+  field: Field;
+  before?: JsonValue;
+  after: string | string[];
+  changed: boolean;
+  state: "unchanged" | "saved" | "failed" | "notExecuted";
+  ticketSaved: boolean;
+  historySaved: boolean | null;
 }
