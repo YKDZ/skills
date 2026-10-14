@@ -15,7 +15,6 @@ import {
   defineCli,
   helpCapability,
   outputCapability,
-  text,
 } from "./vendor/cli-contract.mjs";
 
 const string = s.string();
@@ -265,7 +264,7 @@ const listCommand = define.command("list")({
   kind: "command",
   parent: "ticketGraph",
   name: "list",
-  description: "查询票；默认 all，前置是否满足不代表实施顺序。",
+  description: "查询票，前置是否满足不代表实施顺序。",
   fields: {
     config: configField,
     filter: {
@@ -430,7 +429,6 @@ export const cli = define({
       commands: "命令",
       arguments: "参数",
       options: "选项",
-      supplement: "说明",
     },
     wording: {
       commandPlaceholder: "命令",
@@ -443,24 +441,7 @@ export const cli = define({
     ticketGraph: {
       kind: "rootGroup",
       name: "ticket-graph",
-      description:
-        "票图管理（Node.js 24.12 及以上）；各子命令通过 --config 选择票集。",
-      helpSupplement: text.lines([
-        "完整复制技能后即可运行，无需安装依赖。命令帮助不读取配置或票文件。",
-        '配置示例：{"tickets":"issues","completion":{"values":["resolved"]}}。相对票目录以配置所在目录为准。',
-        "每套票集使用一份配置，不自动查找或合并配置。init 的父目录须已存在；它只创建配置，不创建票目录。",
-        "票目录只读取本层数字前缀的 .md 普通文件，不递归；票标识保留前导零。票头格式见技能正文。",
-        "修改拒绝新结构错误，允许逐步修复旧错；结果会报告剩余问题。正文编辑应与命令写入错开。",
-        "写锁位于票目录的 .ticket-graph.lock，最多等待 5 秒；LOCKED 时先确认锁中记录的进程已退出且没有其他写入，再清理锁文件。",
-        "历史路径为配置文件完整路径追加 .history.jsonl；各配置的历史独立，不参与当前票图计算。",
-        "成功 JSON 写入标准输出，失败 JSON 写入标准错误。退出码：成功 0，执行失败 1，用法错误 2。",
-        "执行结果封装为 schemaVersion、command、kind、variant、data；用法错误为 usageFailure，包含 issues、usage 和 helpArgv。",
-        "set-status 的 data.results 为逐票数组；执行失败查看 data.effects，输出异常查看入口诊断的 effects。",
-        "configCreated 表示已创建配置，configSaved 表示保存情况；逐票 ticketSaved、historySaved 表示保存效果，null 表示不确定。",
-        "批量保存途中失败会停止后续写入，保留已保存内容；核对实际结果后再决定下一步，不自动回滚或重试。",
-        "查询无匹配项返回空数组及范围；查询失败不能当作没有待办工作。工具不推荐票或判断交付。",
-        "示例：node ticket-graph.mts set-status 01 02 --status resolved --config ticket-graph.json",
-      ]),
+      description: "票图管理工具；各子命令通过 --config 选择票集。",
     },
     ...init,
     ...checkCommand,
