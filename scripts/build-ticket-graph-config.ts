@@ -90,7 +90,7 @@ const source = {
   documentation: "https://ajv.js.org/standalone.html",
   tarball: `https://registry.npmjs.org/ajv/-/ajv-${ajvPackage.version}.tgz`,
   generatedBy: `ajv@${ajvPackage.version} + esbuild@${esbuildPackage.version}`,
-  buildScript: "scripts/build-ticket-graph-config.mts",
+  buildScript: "scripts/build-ticket-graph-config.ts",
   rebuildFromRepositoryRoot: [
     "pnpm install --frozen-lockfile --ignore-scripts",
     "pnpm run build:ticket-graph-config",

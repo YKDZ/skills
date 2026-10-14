@@ -21,7 +21,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
 import { inspect, replaceValue } from "./graph.mts";
-import type { Configuration, Effects } from "./types.mts";
+import type { Configuration, Effects } from "./types.ts";
 import validateConfig from "./vendor/config-validator.mjs";
 
 interface Options {

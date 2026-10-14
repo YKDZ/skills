@@ -7,7 +7,7 @@
   "documentation": "https://ajv.js.org/standalone.html",
   "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
   "generatedBy": "ajv@8.20.0 + esbuild@0.28.2",
-  "buildScript": "scripts/build-ticket-graph-config.mts",
+  "buildScript": "scripts/build-ticket-graph-config.ts",
   "rebuildFromRepositoryRoot": [
     "pnpm install --frozen-lockfile --ignore-scripts",
     "pnpm run build:ticket-graph-config"

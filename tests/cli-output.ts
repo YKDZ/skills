@@ -2,7 +2,7 @@ import type {
   JsonValue,
   Effects,
   Issue,
-} from "../skills/ticket-graph/scripts/types.mts";
+} from "../skills/ticket-graph/scripts/types.ts";
 
 // 各测试按所调用命令断言这些外部结果；解析本身不承担运行时校验。
 export interface TicketView {

@@ -22,8 +22,9 @@
   },
   "include": [
     "*.config.ts",
-    "scripts/**/*.mts",
+    "scripts/**/*.ts",
+    "skills/**/*.ts",
     "skills/**/*.mts",
-    "tests/**/*.mts"
+    "tests/**/*.ts"
   ]
 }

@@ -13,8 +13,8 @@ import test from "node:test";
 import type { TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import type { Completion } from "../skills/ticket-graph/scripts/types.mts";
-import { success, failure } from "./cli-output.mts";
+import type { Completion } from "../skills/ticket-graph/scripts/types.ts";
+import { success, failure } from "./cli-output.ts";
 
 const cli = fileURLToPath(
   new URL("../skills/ticket-graph/scripts/ticket-graph.mts", import.meta.url),

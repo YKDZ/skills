@@ -10,8 +10,8 @@ const temporary = await mkdtemp(join(tmpdir(), "skills-generated-"));
 
 try {
   for (const script of [
-    "build-ticket-graph-config.mts",
-    "build-ticket-graph-vendor.mts",
+    "build-ticket-graph-config.ts",
+    "build-ticket-graph-vendor.ts",
   ]) {
     const result = spawnSync(
       process.execPath,

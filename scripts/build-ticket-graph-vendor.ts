@@ -81,7 +81,7 @@ const source = {
   documentation: yamlPackage.homepage,
   tarball: `https://registry.npmjs.org/yaml/-/yaml-${yamlPackage.version}.tgz`,
   generatedBy: `esbuild@${esbuildPackage.version}`,
-  buildScript: "scripts/build-ticket-graph-vendor.mts",
+  buildScript: "scripts/build-ticket-graph-vendor.ts",
   rebuildFromRepositoryRoot: [
     "pnpm install --frozen-lockfile --ignore-scripts",
     "pnpm run build:ticket-graph-vendor",

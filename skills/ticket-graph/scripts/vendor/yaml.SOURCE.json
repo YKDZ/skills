@@ -6,7 +6,7 @@
   "documentation": "https://eemeli.org/yaml/",
   "tarball": "https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz",
   "generatedBy": "esbuild@0.28.2",
-  "buildScript": "scripts/build-ticket-graph-vendor.mts",
+  "buildScript": "scripts/build-ticket-graph-vendor.ts",
   "rebuildFromRepositoryRoot": [
     "pnpm install --frozen-lockfile --ignore-scripts",
     "pnpm run build:ticket-graph-vendor"

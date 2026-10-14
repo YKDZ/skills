@@ -7,7 +7,7 @@ import type {
   Ticket,
   TicketSource,
   ValueRange,
-} from "./types.mts";
+} from "./types.ts";
 import {
   isAlias,
   isMap,
