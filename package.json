@@ -2,28 +2,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:ticket-graph-config": "node scripts/build-ticket-graph-config.ts",
-    "build:ticket-graph-vendor": "node scripts/build-ticket-graph-vendor.ts",
     "format:check": "oxfmt --list-different .",
     "format:write": "oxfmt --write .",
     "lint": "oxlint --quiet --format=unix --ignore-pattern node_modules .",
     "lint:fix": "oxlint --format=unix . --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
-    "test": "node --test tests/*.test.ts",
-    "check:generated": "node scripts/check-generated.ts",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run check:generated",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck",
     "fix": "pnpm run lint:fix && pnpm run format:write"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
-    "@ykdz/cli-contract": "0.2.1",
-    "ajv": "8.20.0",
-    "esbuild": "0.28.2",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.77.0",
     "oxlint-tsgolint": "^7.0.2001",
-    "typescript-7": "npm:typescript@^7.0.2",
-    "yaml": "2.9.1"
+    "typescript-7": "npm:typescript@^7.0.2"
   },
   "engines": {
     "node": "24.21.0"

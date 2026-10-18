@@ -20,11 +20,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": [
-    "*.config.ts",
-    "scripts/**/*.ts",
-    "skills/**/*.ts",
-    "skills/**/*.mts",
-    "tests/**/*.ts"
-  ]
+  "include": ["*.config.ts"]
 }

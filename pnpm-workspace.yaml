@@ -1,4 +1,1 @@
-allowBuilds:
-  esbuild: true
-
 verifyDepsBeforeRun: error
