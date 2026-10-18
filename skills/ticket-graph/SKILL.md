@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 用户明确启用选定票集后使用。
 
-通过 `pnpm dlx @ykdz/tickets@latest` 调用工具，先查看根命令及相关子命令的 `--help`。票文件格式见 `npm view @ykdz/tickets@latest readme`。
+通过 `pnpm dlx @ykdz/tickets@latest --help` 调用工具。票文件格式见 `npm view @ykdz/tickets@latest readme`。
 
 沿用项目既有票据约定和配置；缺少配置时按项目约定的票目录和完成值初始化。
 
