@@ -1,5 +1,3 @@
 interface:
   display_name: "Code Comments"
   short_description: "指导接口文档与实现注释，补充必要约定并提升代码检索和维护效率"
-policy:
-  allow_implicit_invocation: false

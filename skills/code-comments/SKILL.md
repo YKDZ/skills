@@ -1,7 +1,6 @@
 ---
 name: code-comments
-description: 维护便于检索和理解的代码注释，补充接口约定与实现理由。
-disable-model-invocation: true
+description: 编写、修改或审查代码时使用，补充接口约定与实现理由，维护便于检索和理解的代码注释。
 ---
 
 # 代码注释
