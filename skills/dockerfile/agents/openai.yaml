@@ -1,0 +1,5 @@
+interface:
+  display_name: "Dockerfile"
+  short_description: "指导镜像的创建与改进，遵循原生工具链并优化交付内容、缓存和运行方式"
+policy:
+  allow_implicit_invocation: false
